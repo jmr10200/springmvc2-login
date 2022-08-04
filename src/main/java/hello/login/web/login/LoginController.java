@@ -53,6 +53,20 @@ public class LoginController {
 
         return "redirect:/";
     }
+
+    @PostMapping("/logout")
+    public String logout(HttpServletResponse response) {
+        // 세션쿠키 이므로 웹 브라우저 종료시
+        expireCookie(response, "memberId");
+        return "redirect:/";
+    }
+
+    private void expireCookie(HttpServletResponse response, String cookieName) {
+        Cookie cookie = new Cookie(cookieName, null);
+        // 서버에서 해당 쿠키의 종료날짜를 0으로 지정
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+    }
 }
 
 // 요구사항 : 로그인이 되면, 홈 화면에 유저 이름이 표시되어야 한다.
@@ -63,3 +77,20 @@ public class LoginController {
 
 // 영속 쿠키 : 만료 날짜를 입력하면 해당 날짜까지 유지
 // 세션 쿠키 : 만료 날짜를 입력하지 않으면 브라우저 종료시까지 유지
+
+/* 쿠키와 보안 문제 */
+// 쿠키를 사용해서 로그인 ID 를 전달하여 로그인을 유지할 수 있지만 심각한 보안 문제가 발생한다.
+// 1. 쿠키 값은 임의로 변경이 가능하다
+// ・클라이언트가 쿠키를 강제로 변경하면 다른 사용자가 된다.
+// ・웹 브라우저 개발자모드 -> Application -> Cookie 변경 으로 확인 가능
+// 2. 쿠키에 보관된 정보는 훔쳐갈 수 있다.
+// ・만약 쿠키에 개인정보나 카드정보 등이 담겨있다면? 웹 브라우저에도 보관되고, 네트워크 요청시마다 클라이언트에서 서버로 전달된다.
+// ・쿠키의 정보가 로컬 PC 에서 도난당할 수 있고, 네트워크 전송 구간에서 도난당할 수 있다.
+// 3. 해커가 쿠키를 한번 훔쳐가면 평생 사용 할 수 있다.
+// ・즉, 해커가 쿠키를 이용해 악의적인 요청을 계속 시도할 수 있다.
+
+// 대안
+// 쿠키에 중요한 값을 노출하지 않는다.
+// 유저별로 예측 불가능한 임의의 토큰(UUID)을 노출하고, 서버에서 토큰과 ID 를 매핑해서 처리하며, 서버에서 토큰을 관리한다.
+// 토큰이 해킹당해도 일정 시간이 지나면 사용할 수 없도록 서버에서 토큰의 만료시간을 짧게(예: 30분) 유지한다.
+// 해킹이 의심되면 서버에서 해당 토큰을 강제로 제거하도록 한다.
