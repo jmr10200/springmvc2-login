@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.SessionAttribute;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -68,7 +69,7 @@ public class HomeController {
         // 서블릿은 추가로 일정시간 사용하지않으면 해당 세션을 삭제하는 기능도 제공한다.
     }
 
-    @GetMapping("/")
+//    @GetMapping("/")
     public String homeLoginV3(HttpServletRequest request, Model model) {
 
         // 세션이 없으면 home
@@ -92,6 +93,25 @@ public class HomeController {
         model.addAttribute("member", loginMember);
         return "loginHome";
     }
+
+    @GetMapping("/")
+    public String homeLoginV3Spring(@SessionAttribute(name = SessionConstant.LOGIN_MEMBER, required = false) Member loginMember, Model model) {
+
+        // 스프링은 세션을 더 편리하게 사용할 수 있도록 @SessionAttribute 를 제공한다.
+        // 이미 로그인 된 사용자를 찾을 때는 다음과 같이 사용하면 된다. 이 기능은 세션을 생성하지 않는다.
+        // @SessionAttribute(name = SessionConstant.LOGIN_MEMBER, required = false) Member loginMember
+        // 세션을 찾고, 세션에 들어있는 데이터를 찾는 번거로운 과정을 스프링이 한번에 편리하게 처리해준다.
+
+        // 세션이 없으면 home
+        if (loginMember == null) {
+            return "home";
+        }
+
+        // 세션이 유지되면 로그인으로 이동
+        // 로그인 정보를 화면에 표시하기 위해 model 에 member 데이터를 추가한다.
+        model.addAttribute("member", loginMember);
+        return "loginHome";
+    }
 }
 
 /* 도메인이 가장 중요하다 */
@@ -101,3 +121,13 @@ public class HomeController {
 //  향후 web 을 다른 기술로 바꿔도 도메인은 그대로 유지할 수 있어야 한다.
 //  -> web 은 domain 을 의존하지만, domain 은 web 을 의존하지 않아야 한다.
 //  (=> domain 은 web 을 참조하면 안된다.)
+
+/* TrackingModes */
+// 처음 로그인을 시도하면 URL 이 다음과 같이 jsessionid 를 포함하고 있다.
+// http://localhost:8080/;jsessionid=F59911518B921DF62D09F0DF8F83F872
+// 이는 브라우저가 쿠키를 지원하지 않을 때 쿠키 대신 URL 을 통해서 세션을 유지하는 방법이다.
+// 이 방법을 사용하려면 URL 에 이 값을 계속 포함해서 전달해야 한다.
+// 타임리프 같은 템플릿은 엔진을 통해 링크를 걸면 jsessionid 를 URL 에 자동 포함해준다.
+// 서버는 브라우저의 쿠키 지원여부를 최초에 판단할 수 없으므로, 쿠키 값도 전달하고 URL 로도 전달한다.
+// URL 전달 방식을 끄고 항상 쿠키를 통해서만 세션을 유지하고 싶다면 다음을 추가하면 된다.
+// application.properties : server.servlet.session.tracking-modes=cookie
