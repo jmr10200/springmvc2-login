@@ -2,6 +2,7 @@ package hello.login.web;
 
 import hello.login.domain.member.Member;
 import hello.login.domain.member.MemberRepository;
+import hello.login.web.session.SessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -9,19 +10,22 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import javax.servlet.http.HttpServletRequest;
+
 @Slf4j
 @Controller
 @RequiredArgsConstructor
 public class HomeController {
 
     private final MemberRepository memberRepository;
+    private final SessionManager sessionManager;
 
     //    @GetMapping("/")
     public String home() {
         return "home";
     }
 
-    @GetMapping("/")
+//    @GetMapping("/")
     public String homeLogin(@CookieValue(name = "memberId", required = false) Long memberId, Model model) {
         // @CookieValue : 쿠키 조회 가능
         // 로그인 사용자도 홈에 접근할 수 있기 때문에 required = false 설정
@@ -41,7 +45,26 @@ public class HomeController {
         // 쿠키가 있으면 로그인 사용자 홈화면 loginHome.html 표시
         // 로그인 정보를 화면에 표시하기 위해 model 에 member 데이터를 추가한다.
         model.addAttribute("member", loginMember);
-        return "loginHome.html";
+        return "loginHome";
+    }
+
+    @GetMapping("/")
+    public String homeLoginV2(HttpServletRequest request, Model model) {
+
+        // 세션 관리자에 의해 저장된 회원 정보 조회
+        Member member = (Member) sessionManager.getSession(request);
+        // 정보 확인
+        if (member == null) {
+            // 정보가 없으면 쿠키나 세션이 없는 것이므로 로그인 되지 않은 것
+            return "home";
+        }
+
+        // 로그인 정보를 화면에 표시하기 위해 model 에 member 데이터를 추가한다.
+        model.addAttribute("member", member);
+        return "loginHome";
+        // 세션을 이해하기위해 세션 만들었지만, 단지 쿠키를 이용하는, 서버에서 데이터를 유지하는 방법일 뿐이다.
+        // 이렇게 매번 세션정보를 만드는 것은 번거롭기 때문에 서블릿이 이를 지원한다.
+        // 서블릿은 추가로 일정시간 사용하지않으면 해당 세션을 삭제하는 기능도 제공한다.
     }
 }
 
