@@ -2,6 +2,7 @@ package hello.login.web.login;
 
 import hello.login.domain.login.LoginService;
 import hello.login.domain.member.Member;
+import hello.login.web.SessionConstant;
 import hello.login.web.session.SessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 
 @Slf4j
@@ -57,7 +59,7 @@ public class LoginController {
         return "redirect:/";
     }
 
-    @PostMapping("/login")
+//    @PostMapping("/login")
     public String loginV2(@Valid @ModelAttribute LoginForm loginForm, BindingResult bindingResult, HttpServletResponse response) {
 
         if (bindingResult.hasErrors()) {
@@ -82,6 +84,35 @@ public class LoginController {
         return "redirect:/";
     }
 
+    @PostMapping("/login")
+    public String loginV3(@Valid @ModelAttribute LoginForm loginForm, BindingResult bindingResult, HttpServletRequest request) {
+
+        if (bindingResult.hasErrors()) {
+            log.error("login validation error");
+            return "login/loginFrom";
+        }
+
+        Member loginMember = loginService.login(loginForm.getLoginId(), loginForm.getPassword());
+        log.info("login? {}", loginMember);
+
+        if (loginMember == null) {
+            // 로그인 실패시, reject() 로 객체에러 (ObjectError) 생성
+            bindingResult.reject("loginFail", "ID 또는 패스워드가 맞지 않습니다.");
+            // 로그인입력화면 표시
+            return "login/loginForm";
+        }
+
+        // 로그인 성공처리
+        // 세션이 존재하는 경우 세션 반환 , 없는 경우 신규 세션 생성
+        HttpSession session = request.getSession();
+        // getSession(true) 면 세션 신규 생성
+
+        // 세션에 로그인 회원 정보 보관, 복수 값 지정 가능
+        session.setAttribute(SessionConstant.LOGIN_MEMBER, loginMember);
+
+        return "redirect:/";
+    }
+
 //    @PostMapping("/logout")
     public String logout(HttpServletResponse response) {
         // 세션쿠키 이므로 웹 브라우저 종료시
@@ -89,10 +120,20 @@ public class LoginController {
         return "redirect:/";
     }
 
-    @PostMapping("/logout")
+//    @PostMapping("/logout")
     public String logoutV2(HttpServletRequest request) {
         // 세션 관리자 이용해서 세션 종료
         sessionManager.expire(request);
+        return "redirect:/";
+    }
+
+    @PostMapping("/logout")
+    public String logoutV3(HttpServletRequest request) {
+        // 세션 삭제
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate(); // 세션을 제거한다
+        }
         return "redirect:/";
     }
 
@@ -129,3 +170,17 @@ public class LoginController {
 // 유저별로 예측 불가능한 임의의 토큰(UUID)을 노출하고, 서버에서 토큰과 ID 를 매핑해서 처리하며, 서버에서 토큰을 관리한다.
 // 토큰이 해킹당해도 일정 시간이 지나면 사용할 수 없도록 서버에서 토큰의 만료시간을 짧게(예: 30분) 유지한다.
 // 해킹이 의심되면 서버에서 해당 토큰을 강제로 제거하도록 한다.
+
+/* HttpSession */
+// 서블릿은 세션을 위해 HttpSession 을 제공한다.
+// 직접 만들어본 SessionManager 와 같은 방식으로 동작한다.
+// 서블릿을 통해 HttpSession 을 생성하면 다음과 같이 추정불가능한 랜덤 값으로 쿠키를 생성한다.
+// Cookie: JSESSIONID=84E09A81CFB64CB54400DD87AC92FCD5
+
+// 세션의 생성과 조회
+// create 옵션 : public HttpSession getSession(boolean create);
+// request.getSession(true) : 세션이 있는경우 기존 세션 반환, 없는 경우 신규 생성 반환
+// request.getSession(false) : 세션이 있는경우 기존 세션 반환, 없는 경우 null 반환
+// request.getSession() : request.getSession(true) 와 동일
+// -> create 의 디폴트 값은 true 이다.
+
