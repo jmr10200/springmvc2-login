@@ -11,6 +11,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -84,7 +85,7 @@ public class LoginController {
         return "redirect:/";
     }
 
-    @PostMapping("/login")
+//    @PostMapping("/login")
     public String loginV3(@Valid @ModelAttribute LoginForm loginForm, BindingResult bindingResult, HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
@@ -111,6 +112,45 @@ public class LoginController {
         session.setAttribute(SessionConstant.LOGIN_MEMBER, loginMember);
 
         return "redirect:/";
+    }
+
+    /**
+     * 로그인 이후 redirect 처리
+     */
+    @PostMapping("/login")
+    public String loginV4(@Valid @ModelAttribute LoginForm loginForm, BindingResult bindingResult, @RequestParam(defaultValue = "/") String redirectURL, HttpServletRequest request) {
+
+        if (bindingResult.hasErrors()) {
+            log.error("login validation error");
+            return "login/loginFrom";
+        }
+
+        Member loginMember = loginService.login(loginForm.getLoginId(), loginForm.getPassword());
+        log.info("login? {}", loginMember);
+
+        if (loginMember == null) {
+            // 로그인 실패시, reject() 로 객체에러 (ObjectError) 생성
+            bindingResult.reject("loginFail", "ID 또는 패스워드가 맞지 않습니다.");
+            // 로그인입력화면 표시
+            return "login/loginForm";
+        }
+
+        // 로그인 성공처리
+        // 세션이 존재하는 경우 세션 반환 , 없는 경우 신규 세션 생성
+        HttpSession session = request.getSession();
+        // getSession(true) 면 세션 신규 생성
+
+        // 세션에 로그인 회원 정보 보관, 복수 값 지정 가능
+        session.setAttribute(SessionConstant.LOGIN_MEMBER, loginMember);
+
+        // redirectURL 적용
+        // 로그인 체크필터에서 미인증 유저는 요청 경로를 포함해서 /login 에 redirectURL 요청 파라미터를 추가해서 요청했다.
+        // 이 값을 사용해서 로그인 성공시 해당 경로로 고객을 redirect 한다.
+        return "redirect:" + redirectURL;
+        /* 흐름 */
+        // 접속 : localhost:8080/items
+        // 화면 : localhost:8080/login?redirectURL=/items
+        // 로그인 후 : localhost:8080/items
     }
 
 //    @PostMapping("/logout")

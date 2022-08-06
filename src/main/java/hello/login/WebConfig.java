@@ -1,6 +1,7 @@
 package hello.login;
 
 import hello.login.web.filter.LogFilter;
+import hello.login.web.filter.LoginCheckFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +27,21 @@ public class WebConfig {
 
         // 참고 : 실무에서 HTTP 요청시 같은 요청의 로그에 모두 같은 식별자를 자동으로 남기는 방법은 logback.mdc 참조
 
+        return filterRegistrationBean;
+    }
+
+    /**
+     * 로그인 체크 필터
+     */
+    @Bean
+    public FilterRegistrationBean loginCheckFilter(){
+        FilterRegistrationBean<Filter> filterRegistrationBean = new FilterRegistrationBean<>();
+        // 로그인 체크 필터 추가
+        filterRegistrationBean.setFilter(new LoginCheckFilter());
+        // 2번 순서 (1번인 로그 필터 다음으로 실행)
+        filterRegistrationBean.setOrder(2);
+        // "/*" : 모든 요청에 로그인 체크 필터 적용
+        filterRegistrationBean.addUrlPatterns("/*");
         return filterRegistrationBean;
     }
 }
