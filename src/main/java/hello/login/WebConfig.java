@@ -1,5 +1,6 @@
 package hello.login;
 
+import hello.login.web.argumentresolver.LoginMemberArgumentResolver;
 import hello.login.web.filter.LogFilter;
 import hello.login.web.filter.LoginCheckFilter;
 import hello.login.web.interceptor.LogInterceptor;
@@ -7,10 +8,12 @@ import hello.login.web.interceptor.LoginCheckInterceptor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.servlet.Filter;
+import java.util.List;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -79,6 +82,16 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/", "/members/add", "/login", "/logout", "/css/**", "/*.ico", "/error");
         // 홈(/) ,회원가입(/members/add), 로그인(/login), 로그아웃(/logout), 리소스 조회(/css/**), 에러(/error) 등의
         // 페이지는 로그인 체크 인터셉터를 적욯하지 않도록 excludePathPatterns()에 지정해준다.
+    }
+
+    /**
+     * LoginMemberArgumentResolver 등록
+     */
+    @Override
+    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+        resolvers.add(new LoginMemberArgumentResolver());
+        // 실행해보면 결과는 동일하지만, 더 편리하게 로그인 정보를 조회할 수 있다.
+        // ArgumentResolver 를 활용하면 공통 작업이 필요할 때 컨트롤러를 더욱 편리하게 사용 가능
     }
 }
 /* 서블릿 필터와 스프링 인터셉터 정리 */

@@ -2,6 +2,7 @@ package hello.login.web;
 
 import hello.login.domain.member.Member;
 import hello.login.domain.member.MemberRepository;
+import hello.login.web.argumentresolver.Login;
 import hello.login.web.session.SessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -94,7 +95,7 @@ public class HomeController {
         return "loginHome";
     }
 
-    @GetMapping("/")
+//    @GetMapping("/")
     public String homeLoginV3Spring(@SessionAttribute(name = SessionConstant.LOGIN_MEMBER, required = false) Member loginMember, Model model) {
 
         // 스프링은 세션을 더 편리하게 사용할 수 있도록 @SessionAttribute 를 제공한다.
@@ -103,6 +104,22 @@ public class HomeController {
         // 세션을 찾고, 세션에 들어있는 데이터를 찾는 번거로운 과정을 스프링이 한번에 편리하게 처리해준다.
 
         // 세션이 없으면 home
+        if (loginMember == null) {
+            return "home";
+        }
+
+        // 세션이 유지되면 로그인으로 이동
+        // 로그인 정보를 화면에 표시하기 위해 model 에 member 데이터를 추가한다.
+        model.addAttribute("member", loginMember);
+        return "loginHome";
+    }
+
+    @GetMapping("/")
+    public String homeLoginV3ArgumentResolver(@Login Member loginMember, Model model) {
+
+        // ArgumentResolver 활용 : @Login 어노테이션을 생성
+
+        // 세션에 없으면 home 화면
         if (loginMember == null) {
             return "home";
         }
@@ -131,3 +148,8 @@ public class HomeController {
 // 서버는 브라우저의 쿠키 지원여부를 최초에 판단할 수 없으므로, 쿠키 값도 전달하고 URL 로도 전달한다.
 // URL 전달 방식을 끄고 항상 쿠키를 통해서만 세션을 유지하고 싶다면 다음을 추가하면 된다.
 // application.properties : server.servlet.session.tracking-modes=cookie
+
+/* ArgumentResolver 활용 */
+// 어노테이션 기반 컨트롤러를 처리하는 RequestMappingHandlerAdaptor 는 이 ArgumentResolver 를 호출해서
+// 컨트롤러(핸들러)가 필요로하는 다양한 파라미터의 값(객체)을 생성한다. 파라미터 값이 모두 준비되면 컨트롤러가 호출하면서 값을 넘겨준다.
+//
